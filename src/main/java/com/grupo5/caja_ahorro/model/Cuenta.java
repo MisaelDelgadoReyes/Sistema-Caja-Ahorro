@@ -23,6 +23,10 @@ public class Cuenta {
     @Column(nullable = false, unique = true, length = 20)
     private String numeroCuenta;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private TipoCuenta tipoCuenta;
+
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal saldo;
 
