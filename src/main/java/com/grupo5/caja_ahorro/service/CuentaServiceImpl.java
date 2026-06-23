@@ -88,7 +88,7 @@ public class CuentaServiceImpl implements ICuentaService {
 
     if (request.getTipoCuenta() == null) {
     throw new IllegalArgumentException("El tipo de cuenta es obligatorio.");
-}
-}
+    }
+}   
 
 }
