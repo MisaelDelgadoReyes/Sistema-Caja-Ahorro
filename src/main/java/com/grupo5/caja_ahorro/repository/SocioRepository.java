@@ -9,4 +9,6 @@ public interface SocioRepository extends JpaRepository<Socio, Long> {
 
     Optional<Socio> findByCedula(String cedula);
 
+    boolean existsByCedula(String cedula);
+
 }

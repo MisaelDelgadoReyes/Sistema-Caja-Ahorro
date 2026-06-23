@@ -41,13 +41,11 @@ public class SocioServiceImpl implements ISocioService {
     public Socio crear(CrearSocioRequest request) {
 
         validar(request);
-
-        if (socioRepository.findByCedula(request.getCedula()).isPresent()) {
+        Socio socio = new Socio();
+        if (socioRepository.existsByCedula(request.getCedula())) {
             throw new IllegalStateException("Ya existe un socio con esa cédula.");
         }
-
-        Socio socio = new Socio();
-
+        
         socio.setCedula(request.getCedula());
         socio.setNombres(request.getNombres());
         socio.setApellidos(request.getApellidos());
