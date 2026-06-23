@@ -75,5 +75,16 @@ public class SocioServiceImpl implements ISocioService {
         if (request.getApellidos() == null || request.getApellidos().isBlank()) {
             throw new IllegalArgumentException("Los apellidos son obligatorios.");
         }
+        if (request.getCedula().length() != 10) {
+            throw new IllegalArgumentException(
+            "La cédula debe tener 10 dígitos."
+    );
+}
+
+if (request.getCorreo() == null || request.getCorreo().isBlank()) {
+    throw new IllegalArgumentException(
+            "El correo es obligatorio."
+    );
+}
     }
 }
