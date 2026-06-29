@@ -25,7 +25,7 @@ public class ContabilidadServiceImpl implements ContabilidadService {
     }
 
     @Override
-    @Transactional // ¡Súper importante para consistencia financiera!
+    @Transactional 
     public TransaccionResponse procesarTransaccion(TransaccionVentanillaRequest request) {
         LocalDateTime ahora = LocalDateTime.now();
 
@@ -60,7 +60,7 @@ public class ContabilidadServiceImpl implements ContabilidadService {
         asientoHaber.setTransaccionVentanilla(transaccionGuardada);
         diarioRepo.save(asientoHaber);
 
-        // 3. Retornar respuesta exitosa
+        
         return new TransaccionResponse(transaccionGuardada.getId(), "Transacción y asientos contables registrados con éxito", ahora);
     }
 }
