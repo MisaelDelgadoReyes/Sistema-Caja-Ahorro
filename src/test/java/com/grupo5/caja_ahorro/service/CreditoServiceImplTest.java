@@ -1,6 +1,8 @@
 package com.grupo5.caja_ahorro.service;
 
 import com.grupo5.caja_ahorro.model.Credito;
+import com.grupo5.caja_ahorro.model.Cuota;
+import com.grupo5.caja_ahorro.request.RechazarCreditoRequest;
 import com.grupo5.caja_ahorro.model.EstadoCredito;
 import com.grupo5.caja_ahorro.model.SistemaAmortizacion;
 import com.grupo5.caja_ahorro.repository.CreditoRepository;
@@ -165,4 +167,204 @@ class CreditoServiceImplTest {
         verify(amortizacionService).simular(request);
     }
 
+    @Test
+    void aprobarDebeCambiarEstadoACredito() {
+    
+        Credito credito = new Credito();
+        credito.setEstado(EstadoCredito.PENDIENTE);
+    
+        when(creditoRepository.findById(1L))
+                .thenReturn(Optional.of(credito));
+    
+        when(amortizacionService.generarCuotas(any()))
+                .thenReturn(Collections.emptyList());
+    
+        when(creditoRepository.save(any()))
+                .thenAnswer(i -> i.getArgument(0));
+    
+        Credito resultado = creditoService.aprobar(1L, null);
+    
+        assertEquals(EstadoCredito.APROBADO, resultado.getEstado());
+    }
+
+    @Test
+    void aprobarDebeFallarSiNoEstaPendiente() {
+    
+        Credito credito = new Credito();
+        credito.setEstado(EstadoCredito.APROBADO);
+    
+        when(creditoRepository.findById(1L))
+                .thenReturn(Optional.of(credito));
+    
+        assertThrows(
+                IllegalStateException.class,
+                () -> creditoService.aprobar(1L, null)
+        );
+    }
+
+    @Test
+    void rechazarDebeCambiarEstado() {
+    
+        Credito credito = new Credito();
+        credito.setEstado(EstadoCredito.PENDIENTE);
+    
+        when(creditoRepository.findById(1L))
+                .thenReturn(Optional.of(credito));
+    
+        when(creditoRepository.save(any()))
+                .thenAnswer(i -> i.getArgument(0));
+    
+        Credito resultado = creditoService.rechazar(1L, null);
+    
+        assertEquals(EstadoCredito.RECHAZADO, resultado.getEstado());
+    }
+
+    @Test
+    void desembolsarDebeCambiarEstado() {
+    
+        Credito credito = new Credito();
+        credito.setEstado(EstadoCredito.APROBADO);
+        credito.setCuotas(Collections.singletonList(mock(com.grupo5.caja_ahorro.model.Cuota.class)));
+    
+        when(creditoRepository.findById(1L))
+                .thenReturn(Optional.of(credito));
+    
+        when(creditoRepository.save(any()))
+                .thenAnswer(i -> i.getArgument(0));
+    
+        Credito resultado = creditoService.desembolsar(1L);
+    
+        assertEquals(EstadoCredito.VIGENTE, resultado.getEstado());
+    }
+
+
+    @Test
+    void desembolsarDebeFallarSiNoEstaAprobado() {
+    
+        Credito credito = new Credito();
+        credito.setEstado(EstadoCredito.PENDIENTE);
+    
+        when(creditoRepository.findById(1L))
+                .thenReturn(Optional.of(credito));
+    
+        assertThrows(
+                IllegalStateException.class,
+                () -> creditoService.desembolsar(1L)
+        );
+    }
+
+    @Test
+    void aprobarDebeCambiarEstadoYGenerarCuotas() {
+    
+        Credito credito = new Credito();
+        credito.setEstado(EstadoCredito.PENDIENTE);
+    
+        Cuota cuota = new Cuota();
+    
+        when(creditoRepository.findById(1L))
+                .thenReturn(Optional.of(credito));
+    
+        when(amortizacionService.generarCuotas(credito))
+                .thenReturn(List.of(cuota));
+    
+        when(creditoRepository.save(any(Credito.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+    
+        Credito resultado = creditoService.aprobar(1L, null);
+    
+        assertEquals(EstadoCredito.APROBADO, resultado.getEstado());
+        assertEquals(1, resultado.getCuotas().size());
+        assertEquals(resultado, resultado.getCuotas().get(0).getCredito());
+    
+        verify(amortizacionService).generarCuotas(credito);
+        verify(creditoRepository).save(credito);
+    }
+
+    @Test
+    void aprobarDebeLanzarExcepcionSiCreditoNoEstaPendiente() {
+    
+        Credito credito = new Credito();
+        credito.setEstado(EstadoCredito.APROBADO);
+    
+        when(creditoRepository.findById(1L))
+                .thenReturn(Optional.of(credito));
+    
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> creditoService.aprobar(1L, null)
+        );
+    
+        assertEquals(
+                "Solo se puede aprobar un crédito en estado PENDIENTE.",
+                ex.getMessage()
+        );
+    
+        verify(creditoRepository, never()).save(any());
+        verify(amortizacionService, never()).generarCuotas(any());
+    }
+
+    @Test
+    void rechazarDebeCambiarEstadoCorrectamente() {
+    
+        Credito credito = new Credito();
+        credito.setEstado(EstadoCredito.PENDIENTE);
+    
+        RechazarCreditoRequest request = new RechazarCreditoRequest();
+        request.setMotivoRechazo("No cumple requisitos");
+    
+        when(creditoRepository.findById(1L))
+                .thenReturn(Optional.of(credito));
+    
+        when(creditoRepository.save(any(Credito.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+    
+        Credito resultado = creditoService.rechazar(1L, request);
+    
+        assertEquals(EstadoCredito.RECHAZADO, resultado.getEstado());
+        assertEquals("No cumple requisitos", resultado.getComentarioOficial());
+    
+        verify(creditoRepository).save(any(Credito.class));
+    }
+    
+    @Test
+    void desembolsarDebeCambiarEstadoAVigente() {
+    
+        Credito credito = new Credito();
+        credito.setEstado(EstadoCredito.APROBADO);
+    
+        Cuota cuota = new Cuota();
+        credito.agregarCuota(cuota);
+    
+        when(creditoRepository.findById(1L))
+                .thenReturn(Optional.of(credito));
+    
+        when(creditoRepository.save(any(Credito.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+    
+        Credito resultado = creditoService.desembolsar(1L);
+    
+        assertEquals(EstadoCredito.VIGENTE, resultado.getEstado());
+        assertNotNull(resultado.getFechaDesembolso());
+    
+        verify(creditoRepository).save(any(Credito.class));
+    }
+    
+    @Test
+    void consultarAmortizacionDebeRetornarLista() {
+    
+        Credito credito = new Credito();
+    
+        when(creditoRepository.findById(1L))
+                .thenReturn(Optional.of(credito));
+    
+        when(cuotaRepository.findByCredito_IdCreditoOrderByNumeroCuotaAsc(1L))
+                .thenReturn(Collections.singletonList(new Cuota()));
+    
+        List<Cuota> resultado = creditoService.consultarAmortizacion(1L);
+    
+        assertEquals(1, resultado.size());
+    
+        verify(cuotaRepository)
+                .findByCredito_IdCreditoOrderByNumeroCuotaAsc(1L);
+    }
 }
