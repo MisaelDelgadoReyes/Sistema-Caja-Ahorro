@@ -55,7 +55,6 @@
     </scm>
 
     <properties>
-
         <java.version>21</java.version>
         <lombok.version>1.18.36</lombok.version>
 
