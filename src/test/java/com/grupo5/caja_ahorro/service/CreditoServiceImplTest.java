@@ -310,6 +310,164 @@ class CreditoServiceImplTest {
         verify(creditoRepository, never()).save(any(Credito.class));
     }
 
+    @Test
+    void consultarPorSocioDebeRetornarCreditosCuandoCedulaEsValida() {
+        Credito credito = crearCredito(EstadoCredito.VIGENTE);
+
+        when(creditoRepository.findByCedulaSocioOrderByFechaSolicitudDesc("0923456789"))
+                .thenReturn(List.of(credito));
+
+        List<Credito> resultado = creditoService.consultarPorSocio("0923456789");
+
+        assertThat(resultado).hasSize(1);
+        assertThat(resultado.get(0).getCedulaSocio()).isEqualTo("0923456789");
+        verify(creditoRepository).findByCedulaSocioOrderByFechaSolicitudDesc("0923456789");
+    }
+
+    @Test
+    void obtenerCreditoDebeLanzarErrorCuandoIdEsNulo() {
+        assertThatThrownBy(() -> creditoService.consultarPorId(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("ID del crédito");
+
+        verify(creditoRepository, never()).findById(any());
+    }
+
+    @Test
+    void rechazarDebeLanzarErrorSiCreditoNoEstaPendiente() {
+        Credito credito = crearCredito(EstadoCredito.APROBADO);
+        when(creditoRepository.findById(1L)).thenReturn(Optional.of(credito));
+
+        assertThatThrownBy(() -> creditoService.rechazar(1L, new RechazarCreditoRequest()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("PENDIENTE");
+
+        verify(creditoRepository, never()).save(any(Credito.class));
+    }
+
+    @Test
+    void desembolsarDebeLanzarErrorSiCreditoNoEstaAprobado() {
+        Credito credito = crearCredito(EstadoCredito.PENDIENTE);
+        when(creditoRepository.findById(1L)).thenReturn(Optional.of(credito));
+
+        assertThatThrownBy(() -> creditoService.desembolsar(1L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("APROBADO");
+
+        verify(creditoRepository, never()).save(any(Credito.class));
+    }
+
+    @Test
+    void pagarCuotaDebeLanzarErrorSiCreditoNoEstaVigenteNiEnMora() {
+        Credito credito = crearCredito(EstadoCredito.PENDIENTE);
+        Cuota cuota = crearCuota(credito, EstadoCuota.PENDIENTE);
+
+        PagoCuotaRequest request = new PagoCuotaRequest();
+        request.setMontoPagado(new BigDecimal("175.00"));
+
+        when(cuotaRepository.findById(1L)).thenReturn(Optional.of(cuota));
+
+        assertThatThrownBy(() -> creditoService.pagarCuota(1L, request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("VIGENTES o EN_MORA");
+
+        verify(cuotaRepository, never()).save(any(Cuota.class));
+    }
+
+    @Test
+    void pagarCuotaDebeLanzarErrorSiCuotaYaEstaPagada() {
+        Credito credito = crearCredito(EstadoCredito.VIGENTE);
+        Cuota cuota = crearCuota(credito, EstadoCuota.PAGADA);
+
+        PagoCuotaRequest request = new PagoCuotaRequest();
+        request.setMontoPagado(new BigDecimal("175.00"));
+
+        when(cuotaRepository.findById(1L)).thenReturn(Optional.of(cuota));
+
+        assertThatThrownBy(() -> creditoService.pagarCuota(1L, request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("ya se encuentra pagada");
+
+        verify(cuotaRepository, never()).save(any(Cuota.class));
+    }
+
+    @Test
+    void pagarCuotaDebeLanzarErrorCuandoRequestEsNulo() {
+        Credito credito = crearCredito(EstadoCredito.VIGENTE);
+        Cuota cuota = crearCuota(credito, EstadoCuota.PENDIENTE);
+
+        when(cuotaRepository.findById(1L)).thenReturn(Optional.of(cuota));
+
+        assertThatThrownBy(() -> creditoService.pagarCuota(1L, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("datos del pago");
+
+        verify(cuotaRepository, never()).save(any(Cuota.class));
+    }
+
+    @Test
+    void pagarCuotaDebeLanzarErrorCuandoMontoEsCero() {
+        Credito credito = crearCredito(EstadoCredito.VIGENTE);
+        Cuota cuota = crearCuota(credito, EstadoCuota.PENDIENTE);
+
+        PagoCuotaRequest request = new PagoCuotaRequest();
+        request.setMontoPagado(BigDecimal.ZERO);
+
+        when(cuotaRepository.findById(1L)).thenReturn(Optional.of(cuota));
+
+        assertThatThrownBy(() -> creditoService.pagarCuota(1L, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("monto pagado");
+
+        verify(cuotaRepository, never()).save(any(Cuota.class));
+    }
+
+    @Test
+    void marcarMoraDebeLanzarErrorSiCreditoNoEstaVigente() {
+        Credito credito = crearCredito(EstadoCredito.APROBADO);
+        when(creditoRepository.findById(1L)).thenReturn(Optional.of(credito));
+
+        assertThatThrownBy(() -> creditoService.marcarMora(1L))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("VIGENTE");
+
+        verify(cuotaRepository, never()).findByCredito_IdCreditoAndEstadoOrderByNumeroCuotaAsc(any(), any());
+        verify(creditoRepository, never()).save(any(Credito.class));
+    }
+
+    @Test
+    void solicitarDebeLanzarErrorCuandoRequestEsNulo() {
+        assertThatThrownBy(() -> creditoService.solicitar(null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("datos de la solicitud");
+
+        verify(creditoRepository, never()).save(any(Credito.class));
+    }
+
+    @Test
+    void solicitarDebeLanzarErrorCuandoMontoEsInvalido() {
+        SolicitudCreditoRequest request = crearSolicitud();
+        request.setMontoSolicitado(BigDecimal.ZERO);
+
+        assertThatThrownBy(() -> creditoService.solicitar(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("monto solicitado");
+
+        verify(creditoRepository, never()).save(any(Credito.class));
+    }
+
+    @Test
+    void solicitarDebeLanzarErrorCuandoSistemaAmortizacionEsNulo() {
+        SolicitudCreditoRequest request = crearSolicitud();
+        request.setSistemaAmortizacion(null);
+
+        assertThatThrownBy(() -> creditoService.solicitar(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("sistema de amortización");
+
+        verify(creditoRepository, never()).save(any(Credito.class));
+    }
+
     private SolicitudCreditoRequest crearSolicitud() {
         SolicitudCreditoRequest request = new SolicitudCreditoRequest();
         request.setCedulaSocio("0923456789");
