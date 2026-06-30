@@ -120,5 +120,6 @@ class AmortizacionServiceImplTest {
         request.setSistemaAmortizacion(sistemaAmortizacion);
         request.setComentarioOficial("Prueba unitaria de amortización");
         return request;
+
     }
 }
