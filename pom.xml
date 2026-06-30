@@ -190,17 +190,9 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.12</version>
-                <configuration>
-                    <excludes>
-                        <exclude>**/CajaAhorroApplication.class</exclude>
-                        <exclude>**/config/**</exclude>
-                        <exclude>**/model/**</exclude>
-                        <exclude>**/request/**</exclude>
-                        <exclude>**/response/**</exclude>
-                        <exclude>**/repository/**</exclude>
-                    </excludes>
-                </configuration>
+
                 <executions>
+
                     <execution>
                         <id>prepare-agent</id>
                         <goals>
@@ -210,7 +202,7 @@
 
                     <execution>
                         <id>report</id>
-                        <phase>verify</phase>
+                        <phase>test</phase>
                         <goals>
                             <goal>report</goal>
                         </goals>
@@ -222,24 +214,28 @@
                         <goals>
                             <goal>check</goal>
                         </goals>
+
                         <configuration>
                             <rules>
                                 <rule>
                                     <element>BUNDLE</element>
+
                                     <limits>
                                         <limit>
-                                            <counter>METHOD</counter>
+                                            <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
                                             <minimum>0.60</minimum>
                                         </limit>
                                     </limits>
+
                                 </rule>
                             </rules>
                         </configuration>
+
                     </execution>
+
                 </executions>
             </plugin>
-
         </plugins>
 
     </build>
