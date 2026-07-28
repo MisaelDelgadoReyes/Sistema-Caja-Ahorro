@@ -20,6 +20,28 @@ Backend desarrollado en Java con Spring Boot para la gestión de un sistema de c
 * Alex Rafael Balon Garofalo
 * Andres Paul Moran Castillo
 
+## 👥 Distribución de Responsabilidades
+
+El desarrollo del proyecto fue dividido entre los integrantes del equipo de la siguiente manera.
+
+### Backend
+
+| Integrante | Responsabilidad |
+|------------|-----------------|
+| **Misael Delgado** | Arquitectura base del sistema y configuración de seguridad (Módulo Core). |
+| **Alex Balón** | Gestión de Socios y Gestión de Cuentas. |
+| **Denisse Pazmiño** | Ciclo de Vida del Crédito y Amortización. |
+| **Andrés Morán** | Transacciones de Ventanilla y Libro Diario (Contabilidad). |
+
+### Frontend
+
+| Integrante | Responsabilidad |
+|------------|-----------------|
+| **Misael Delgado** | Inicio de sesión (Login) y seguridad de la aplicación. |
+| **Denisse Pazmiño** | Interfaces de Socios y Cuentas. |
+| **Andrés Morán** | Interfaces de Ahorros y Transacciones. |
+| **Alex Balón** | Dashboard, Reportes, Gráficas, Pruebas y Documentación. |
+
 ## Objetivo del proyecto
 
 Construir el backend del Sistema de Caja de Ahorro y Crédito, cumpliendo los requerimientos definidos en la Tarea T02.01 y el diseño planteado en la Tarea T02.02. El sistema busca gestionar módulos relacionados con usuarios, perfiles, socios, aportaciones, créditos, amortización y operaciones financieras básicas.
